@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en" >
+
+<head>
+  <meta charset="UTF-8">
+  <title>Webcapture</title>
+  
+  
+  <link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900|Material+Icons'>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+<script src='https://cdn.jsdelivr.net/npm/vue/dist/vue.js'></script>
+
+</head>
+<body>
+
+  <div id="app">
+      <div class="container">
+          <div class="oulinesection text-center">
+              <button type="button" class="btn btn-success" data-toggle="modal" data-target="#myModal" @click="dialog = true, gettingDevice()" style="padding: .5em 3em;" > Use Device camera to take selfie</button>
+      </div>
+
+      <div class="modal fade" id="myModal" role="dialog" v-if="dialog">
+    <div class="modal-dialog modal-lg">
+    
+      <!-- Modal content-->
+      <div class="modal-content" style="text-align:center;" >
+        <div v-if="noDevice">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" @click="dialog = false">&times;</button>
+          <h4 class="modal-title" @click="dialog = false">Snap</h4>
+        </div>
+        <div class="modal-body" style="display: inline-flex;
+        place-content: space-between;">
+            <vue-webcam v-if="dialog" ref='webcam' style="margin-right: 2em;">
+                <video></video>
+            </vue-webcam>
+            <hr/><hr>
+            <img :src="photo" alt="" style="width:400px;height:300px" style="margin-left: 2em;"/>
+            <hr/>
+        </div>
+        <div class="modal-footer">
+            <button type="button" @click="take_photo" class="btn btn-success">Take Photo</button>
+          <button type="button" class="btn btn-default" data-dismiss="modal" @click="dialog = false, photo=null">Close</button>
+        </div>
+       </div>
+        <div v-else>
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+              <div class="modal-body" style="display: inline-flex;
+              place-content: space-between;">
+                  <h1>No Device Found</h1>
+                  <hr/>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal" @click="dialog = false, photo=null ">Close</button>
+              </div>
+          
+        </div>
+      </div>
+      
+      
+    </div>
+  </div>
+            
+    </div>
+</div>
+
+  <script src='https://cdn.jsdelivr.net/npm/babel-polyfill/dist/polyfill.min.js'></script>
+<script src='https://cdn.jsdelivr.net/npm/vue/dist/vue.js'></script>
+
+
+  
+
+    <script>
+    
+    new Vue({
+  el: "#app",
+  data() {
+    return {
+      dialog: false,
+      photo: null,
+      noDevice: true,
+      
+    }
+  },
+  methods: {
+    take_photo() {
+      this.photo = this.$refs.webcam.getPhoto();
+      console.log(this.photo)
+    },
+   gettingDevice(){
+    
+     navigator.mediaDevices.enumerateDevices()
+     .then(gotDevices=>{
+       var arr =[];
+       gotDevices.forEach(e=>{
+           arr.push(e.kind)
+       })
+       console.log(arr);
+       if((arr.indexOf("videoinput"))==-1)
+            {this.noDevice=true;
+            console.log(this.noDevice)
+            }
+        })
+   },
+  
+  
+  },
+    
+  
+  
+  
+  });
+
+
+
+const WebcamComponent = Vue.extend({
+  render: function (h) {
+    return h("video", {
+      ref: "video",
+      attrs: {
+        width: this.width,
+        height: this.height,
+        src: this.src,
+        autoplay: this.autoplay,
+        style: `transform:${this.styleObject.transform}` } });
+
+
+  },
+
+  props: {
+    autoplay: { type: Boolean, default: true },
+    width: { type: Number, default: 400 },
+    height: { type: Number, default: 300},
+    mirror: { type: Boolean, default: true },
+    screenshotFormat: { type: String, default: "image/jpeg" } },
+
+
+  data() {
+   return{
+      video: "",
+      src: "",
+      stream: "",
+      hasUserMedia: true,
+      styleObject: {
+        transform: "scaleX(-1)",
+        filter: "FlipH" } 
+
+      }
+  },
+
+  methods: {
+    getPhoto() {
+      if (!this.hasUserMedia) return null;
+
+      const canvas = this.getCanvas();
+      return canvas.toDataURL("image/jpeg");
+    },
+    getCanvas() {
+      if (!this.hasUserMedia) return null;
+
+      var video = this.$refs.video;
+      if (!this.ctx) {
+        const canvas = document.createElement("canvas");
+        canvas.height = video.clientHeight;
+        canvas.width = video.clientWidth;
+        this.canvas = canvas;
+
+        this.ctx = canvas.getContext("2d");
+
+        const context = canvas.getContext("2d");
+        context.translate(canvas.width, 0);
+        context.scale(-1, 1);
+        this.ctx = context;
+      }
+
+      const { ctx, canvas } = this;
+      ctx.drawImage(this.video, 0, 0, canvas.width, canvas.height);
+
+      return canvas;
+    },
+  
+    
+    
+     },
+
+
+  mounted() {
+    this.video = this.$refs.video;
+    navigator.getUserMedia =
+    navigator.getUserMedia ||
+    navigator.webkitGetUserMedia ||
+    navigator.mozGetUserMedia ||
+    navigator.msGetUserMedia ||
+    navigator.oGetUserMedia;
+    var vm=this;
+    if (navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(function (stream) {
+          vm.video.srcObject = stream;
+        })
+        .catch(function (error) {
+          console.log(error);
+        });
+    }
+    
+  },
+
+  beforeDestroy() {
+    
+      
+      this.video.srcObject.getTracks().forEach( (track) => {
+      track.stop();
+      });
+      console.log("Vid off");
+    
+  },
+
+  
+
+
+  destroyed() {
+    console.log("Destroyed");
+  } });
+
+
+const VueWebcam = Vue.component("vue-webcam", WebcamComponent);
+
+
+
+
+
+
+
+
+
+       
+
+    </script>
+
+
+
+
+</body>
+
+</html>
